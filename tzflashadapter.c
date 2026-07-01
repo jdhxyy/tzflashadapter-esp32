@@ -1,5 +1,5 @@
 // Copyright 2021-2021 The jdh99 Authors. All rights reserved.
-// tzflashÊÊÅäÆ÷
+// tzflashé€‚é…å™¨
 // Authors: jdh99 <jdh821@163.com>
 
 #include "tzflashadapter.h"
@@ -12,7 +12,7 @@
 #include "esp_partition.h"
 #include "esp_system.h"
 #include "lagan.h"
-#include "mbedtls/aes.h"
+#include "aes/esp_aes.h"
 
 #define TAG "tzflashadapter"
 
@@ -37,7 +37,7 @@ static uint8_t gEncryptKeyLen = 0;
 static bool encryptData(const esp_partition_t *partition, uint32_t addr, const uint8_t *input, int inputLen);
 static bool decryptData(const esp_partition_t *partition, uint32_t addr, uint8_t *out, int outLen);
 
-// TZFlashAdapterLoad Ä£¿éÔØÈë.partitionNameÊÇ·ÖÇøÃû
+// TZFlashAdapterLoad æ¨¡å—è½½å…¥.partitionNameæ˜¯åˆ†åŒºå
 bool TZFlashAdapterLoad(char* partitionName) {
     if (strlen(partitionName) > PARTITION_NAME_LEN_MAX - 1) {
         return false;
@@ -47,9 +47,9 @@ bool TZFlashAdapterLoad(char* partitionName) {
     return TZFlashLoad(PAGE_SIZE, ALIGN_NUM, TZFlashAdapterErase, TZFlashAdapterWrite, TZFlashAdapterRead);
 }
 
-// TZFlashAdapterErase ²Á³ıflash
-// addr:ÆğÊ¼µØÖ·.size:²Á³ı×Ö½ÚÊı
-// ³É¹¦·µ»Øtrue,Ê§°Ü·µ»Øfalse
+// TZFlashAdapterErase æ“¦é™¤flash
+// addr:èµ·å§‹åœ°å€.size:æ“¦é™¤å­—èŠ‚æ•°
+// æˆåŠŸè¿”å›true,å¤±è´¥è¿”å›false
 bool TZFlashAdapterErase(uint32_t addr, int size) {
     const esp_partition_t *partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA,
                                                                 ESP_PARTITION_SUBTYPE_ANY, gPartitionName);
@@ -63,9 +63,9 @@ bool TZFlashAdapterErase(uint32_t addr, int size) {
     return esp_partition_erase_range(partition, addr, size) == ESP_OK;
 }
 
-// TZFlashAdapterWrite Ğ´Èëflash
-// addr:ÆğÊ¼µØÖ·.bytes:´ıĞ´ÈëµÄ×Ö½ÚÁ÷.size:Ğ´Èë×Ö½ÚÊı
-// ³É¹¦·µ»Øtrue,Ê§°Ü·µ»Øfalse
+// TZFlashAdapterWrite å†™å…¥flash
+// addr:èµ·å§‹åœ°å€.bytes:å¾…å†™å…¥çš„å­—èŠ‚æµ.size:å†™å…¥å­—èŠ‚æ•°
+// æˆåŠŸè¿”å›true,å¤±è´¥è¿”å›false
 bool TZFlashAdapterWrite(uint32_t addr, uint8_t *bytes, int size) {
     const esp_partition_t *partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA,
                                                                 ESP_PARTITION_SUBTYPE_ANY, gPartitionName);
@@ -109,13 +109,13 @@ static bool encryptData(const esp_partition_t *partition, uint32_t addr, const u
     }
     buffer->len = 0;
 
-    mbedtls_aes_context aesCtx;
-    mbedtls_aes_init(&aesCtx);
+    esp_aes_context aesCtx;
+    esp_aes_init(&aesCtx);
 
-    if (mbedtls_aes_setkey_enc(&aesCtx, gEncryptKey, gEncryptKeyLen * 8) != 0) {
-        LE(TAG, "load failed!mbedtls aes setkey failed");
+    if (esp_aes_setkey(&aesCtx, gEncryptKey, gEncryptKeyLen * 8) != 0) {
+        LE(TAG, "load failed!aes setkey failed");
         TZFree(buffer);
-        mbedtls_aes_free(&aesCtx);
+        esp_aes_free(&aesCtx);
         return false;
     }
 
@@ -123,18 +123,18 @@ static bool encryptData(const esp_partition_t *partition, uint32_t addr, const u
         if (i + AES_BLOCK_SIZE > inputLen) {
             break;
         }
-        mbedtls_aes_crypt_ecb(&aesCtx, MBEDTLS_AES_ENCRYPT, input + i, buffer->buf + i);
+        esp_aes_crypt_ecb(&aesCtx, ESP_AES_ENCRYPT, input + i, buffer->buf + i);
         buffer->len = i + AES_BLOCK_SIZE;
     }
 
     if (inputLen > buffer->len) {
         uint8_t temp[AES_BLOCK_SIZE] = {0};
         memcpy(temp, input + buffer->len, inputLen - buffer->len);
-        mbedtls_aes_crypt_ecb(&aesCtx, MBEDTLS_AES_ENCRYPT, temp, buffer->buf + buffer->len);
+        esp_aes_crypt_ecb(&aesCtx, ESP_AES_ENCRYPT, temp, buffer->buf + buffer->len);
         buffer->len += AES_BLOCK_SIZE;
     }
 
-    mbedtls_aes_free(&aesCtx);
+    esp_aes_free(&aesCtx);
 
     if (esp_partition_write(partition, addr, buffer->buf, buffer->len) != ESP_OK) {
         LE(TAG, "write flash failed!esp partition write failed");
@@ -147,9 +147,9 @@ static bool encryptData(const esp_partition_t *partition, uint32_t addr, const u
     return true;
 }
 
-// TZFlashAdapterRead ¶ÁÈ¡flash
-// addr:ÆğÊ¼µØÖ·.bytes:¶ÁÈ¡µÄ×Ö½ÚÁ÷´æ·ÅµÄ»º´æ.size:¶ÁÈ¡µÄ×Ö½ÚÊı
-// ³É¹¦·µ»Øtrue,Ê§°Ü·µ»Øfalse
+// TZFlashAdapterRead è¯»å–flash
+// addr:èµ·å§‹åœ°å€.bytes:è¯»å–çš„å­—èŠ‚æµå­˜æ”¾çš„ç¼“å­˜.size:è¯»å–çš„å­—èŠ‚æ•°
+// æˆåŠŸè¿”å›true,å¤±è´¥è¿”å›false
 bool TZFlashAdapterRead(uint32_t addr, uint8_t *bytes, int size) {
     const esp_partition_t *partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA,
                                                                 ESP_PARTITION_SUBTYPE_ANY, gPartitionName);
@@ -204,9 +204,9 @@ static bool decryptData(const esp_partition_t *partition, uint32_t addr, uint8_t
         return false;
     }
 
-    mbedtls_aes_context aesCtx;
-    mbedtls_aes_init(&aesCtx);
-    if (mbedtls_aes_setkey_dec(&aesCtx, gEncryptKey, gEncryptKeyLen * 8) != 0) {
+    esp_aes_context aesCtx;
+    esp_aes_init(&aesCtx);
+    if (esp_aes_setkey(&aesCtx, gEncryptKey, gEncryptKeyLen * 8) != 0) {
         LE(TAG, "Failed to set AES key");
         TZFree(buffer);
         return false;
@@ -216,24 +216,24 @@ static bool decryptData(const esp_partition_t *partition, uint32_t addr, uint8_t
         if (i + AES_BLOCK_SIZE > outLen) {
             break;
         }
-        mbedtls_aes_crypt_ecb(&aesCtx, MBEDTLS_AES_DECRYPT, buffer->buf + i, out + i);
+        esp_aes_crypt_ecb(&aesCtx, ESP_AES_DECRYPT, buffer->buf + i, out + i);
         buffer->len = i + AES_BLOCK_SIZE;
     }
 
     if (outLen > buffer->len) {
         uint8_t temp[AES_BLOCK_SIZE] = {0};
-        mbedtls_aes_crypt_ecb(&aesCtx, MBEDTLS_AES_DECRYPT, buffer->buf + buffer->len, temp);
+        esp_aes_crypt_ecb(&aesCtx, ESP_AES_DECRYPT, buffer->buf + buffer->len, temp);
         memcpy(out + buffer->len, temp, outLen - buffer->len);
     }
 
     TZFree(buffer);
 
-    mbedtls_aes_free(&aesCtx);
+    esp_aes_free(&aesCtx);
 
     return true;
 }
 
-// TZFlashAdapterEnableEncrypt ¿ªÆô¼ÓÃÜ
+// TZFlashAdapterEnableEncrypt å¼€å¯åŠ å¯†
 bool TZFlashAdapterEnableEncrypt(TZFlashAdapterEncryptType type, uint8_t *key, uint8_t keyLen) {
     if (keyLen > ENCRYPT_KEY_LEN_MAX || key == NULL || type == TZFLASHADAPTER_ENCRYPT_NONE) {
         return false;
@@ -254,7 +254,7 @@ bool TZFlashAdapterEnableEncrypt(TZFlashAdapterEncryptType type, uint8_t *key, u
     return true;
 }
 
-// TZFlashAdapterDisableEncrypt ¹Ø±Õ¼ÓÃÜ
+// TZFlashAdapterDisableEncrypt å…³é—­åŠ å¯†
 bool TZFlashAdapterDisableEncrypt(void) {
     gEncryptType = TZFLASHADAPTER_ENCRYPT_NONE;
     return true;
