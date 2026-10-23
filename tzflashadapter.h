@@ -1,5 +1,5 @@
 // Copyright 2021-2021 The jdh99 Authors. All rights reserved.
-// tzflashÊÊÅäÆ÷
+// tzflashé€‚é…å™¨
 // Authors: jdh99 <jdh821@163.com>
 
 #ifndef TZFLASHADAPTER_H
@@ -20,22 +20,22 @@ typedef struct {
     uint8_t EncryptKeyLen;
 } TZFlashAdapterParam;
 
-// TZFlashAdapterLoad Ä£¿éÔØÈë.partitionNameÊÇ·ÖÇøÃû
-bool TZFlashAdapterLoad(char* partitionName);
+// TZFlashAdapterLoad æ¨¡å—è½½å…¥.partitionNameæ˜¯åˆ†åŒºå
+bool TZFlashAdapterLoad(char* partitionName, int alignNum);
 
-// TZFlashAdapterErase ²Á³ıflash
+// TZFlashAdapterErase æ“¦é™¤flash
 bool TZFlashAdapterErase(uint32_t addr, int size);
 
-// TZFlashAdapterWrite Ğ´Èëflash
+// TZFlashAdapterWrite å†™å…¥flash
 bool TZFlashAdapterWrite(uint32_t addr, uint8_t* bytes, int size);
 
-// TZFlashAdapterRead ¶ÁÈ¡flash
+// TZFlashAdapterRead è¯»å–flash
 bool TZFlashAdapterRead(uint32_t addr, uint8_t* bytes, int size);
 
-// TZFlashAdapterEnableEncrypt ¿ªÆô¼ÓÃÜ
+// TZFlashAdapterEnableEncrypt å¼€å¯åŠ å¯†
 bool TZFlashAdapterEnableEncrypt(TZFlashAdapterEncryptType type, uint8_t* key, uint8_t keyLen);
 
-// TZFlashAdapterDisableEncrypt ¹Ø±Õ¼ÓÃÜ
+// TZFlashAdapterDisableEncrypt å…³é—­åŠ å¯†
 bool TZFlashAdapterDisableEncrypt(void);
 
 #endif

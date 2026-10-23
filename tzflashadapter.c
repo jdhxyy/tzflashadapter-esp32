@@ -19,7 +19,6 @@
 #define MALLOC_SIZE 4096
 
 #define PAGE_SIZE 4096
-#define ALIGN_NUM 1
 
 #define PARTITION_NAME_LEN_MAX 32
 #define ENCRYPT_KEY_LEN_MAX 32
@@ -38,13 +37,13 @@ static bool encryptData(const esp_partition_t *partition, uint32_t addr, const u
 static bool decryptData(const esp_partition_t *partition, uint32_t addr, uint8_t *out, int outLen);
 
 // TZFlashAdapterLoad 模块载入.partitionName是分区名
-bool TZFlashAdapterLoad(char* partitionName) {
+bool TZFlashAdapterLoad(char* partitionName, int alignNum) {
     if (strlen(partitionName) > PARTITION_NAME_LEN_MAX - 1) {
         return false;
     }
     strcpy(gPartitionName, partitionName);
 
-    return TZFlashLoad(PAGE_SIZE, ALIGN_NUM, TZFlashAdapterErase, TZFlashAdapterWrite, TZFlashAdapterRead);
+    return TZFlashLoad(PAGE_SIZE, alignNum, TZFlashAdapterErase, TZFlashAdapterWrite, TZFlashAdapterRead);
 }
 
 // TZFlashAdapterErase 擦除flash
